@@ -1,0 +1,33 @@
+# Logs
+*.log
+logs/
+
+# SQLite & Databases
+*.db
+*.sqlite
+*.sqlite3
+exceptions.json
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.coverage
+htmlcov/
+.nox/
+.tox/
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db

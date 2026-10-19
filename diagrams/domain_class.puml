@@ -1,0 +1,51 @@
+@startuml Domain_Class_Diagram
+
+class Trade {
+    + String trade_id
+    + int version
+    + String counter_party_id
+    + String book_id
+    + date maturity_date
+    + date created_date
+    + String expired
+    + is_expired(ref_date: date): bool
+    + mark_expired(): void
+}
+
+interface ITradeRepository {
+    + get_by_id(trade_id: String): Trade
+    + save_or_update(trade: Trade): void
+    + get_all_active_trades(): List<Trade>
+    + mark_trades_expired_before(ref_date: date): int
+}
+
+interface ITradeStateCache {
+    + get_latest_version(trade_id: String): int
+    + set_latest_version(trade_id: String, version: int): void
+}
+
+interface IEventQueue {
+    + publish(trade: Trade): void
+    + consume(): Trade
+}
+
+class TradeService {
+    - ITradeRepository repository
+    - ITradeStateCache cache
+    + process_trade(trade: Trade, current_date: date): Trade
+}
+
+class TradeExpirationJob {
+    - ITradeRepository repository
+    + execute_expiration_check(current_date: date): int
+}
+
+class SQLiteTradeRepository implements ITradeRepository
+class InMemoryTradeStateCache implements ITradeStateCache
+class InMemoryEventQueue implements IEventQueue
+
+TradeService --> ITradeRepository
+TradeService --> ITradeStateCache
+TradeExpirationJob --> ITradeRepository
+
+@enduml

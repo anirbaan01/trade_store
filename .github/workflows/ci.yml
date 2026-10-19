@@ -1,0 +1,60 @@
+name: CI/CD Pipeline & Vulnerability Scanning
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test-and-scan:
+    name: Build, TDD Regression, & Security Audit
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/python-version@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Static Security Scan (Bandit SAST)
+        run: |
+          echo "=== Running Static Application Security Testing (Bandit) ==="
+          bandit -r app/ -ll -ii
+
+      - name: OSS Dependency Vulnerability Scan (Safety)
+        run: |
+          echo "=== Scanning Python Dependencies for Known Vulnerabilities ==="
+          safety check --full-report
+
+      - name: Run Automated TDD & Regression Suite (pytest)
+        run: |
+          echo "=== Executing Test Suite with Coverage ==="
+          pytest --cov=app --cov-report=xml --cov-fail-under=90
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker Container Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          load: true
+          tags: trade-store:latest
+
+      - name: Container Image Vulnerability Scan (Trivy)
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'trade-store:latest'
+          format: 'table'
+          exit-code: '1' # Fails build on critical / blocker vulnerabilities
+          ignore-unfixed: true
+          severity: 'CRITICAL,HIGH'

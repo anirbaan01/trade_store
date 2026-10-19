@@ -1,0 +1,35 @@
+@startuml High_Level_Architecture
+
+skinparam componentStyle uml2
+
+package "Single Docker Container" {
+
+    [FastAPI REST Controller] as API
+    [InMemory Event Queue (asyncio.Queue)] as StreamQueue
+    
+    package "Core Domain & Use Cases" {
+        [Trade Service (Validation Engine)] as TradeService
+        [Trade Expiration Job (APScheduler)] as ExpireJob
+    }
+    
+    package "Adapters & Storage" {
+        [SQLite DB Adapter (SQLAlchemy ORM)] as SQLRepo
+        [In-Memory State Cache (Key-Value)] as Cache
+    }
+    
+    database "SQLite Engine (trade_store.db)" as SQLite
+}
+
+Client --> API : HTTP POST /api/v1/trades
+Client --> StreamQueue : HTTP POST /api/v1/trades/stream (Async Ingest)
+
+StreamQueue --> TradeService : Consume Trade Event
+API --> TradeService : Direct Trade Ingestion
+
+TradeService --> Cache : O(1) Version State Lookup
+TradeService --> SQLRepo : Persist / Replace Validated Trade
+ExpireJob --> SQLRepo : Bulk Expire Matured Trades
+
+SQLRepo --> SQLite : Async SQL Execution
+
+@enduml

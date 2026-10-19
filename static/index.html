@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Trade Store Control Panel</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --card-border: #334155;
+      --accent: #38bdf8;
+      --accent-hover: #0284c7;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --purple: #a855f7;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 1.5rem; display: flex; justify-content: center; }
+    .container { max-width: 1280px; width: 100%; display: flex; flex-direction: column; gap: 1.25rem; }
+    
+    header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--card-border); padding-bottom: 1rem; flex-wrap: wrap; gap: 1rem; }
+    h1 { font-size: 1.6rem; color: var(--accent); display: flex; align-items: center; gap: 0.5rem; }
+    
+    .metrics-bar { display: flex; gap: 0.75rem; flex-wrap: wrap; }
+    .metric-badge { background: var(--card-bg); border: 1px solid var(--card-border); padding: 0.4rem 0.8rem; border-radius: 0.5rem; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 0.4rem; }
+    .metric-value { font-weight: 700; color: var(--accent); }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); display: inline-block; }
+
+    .grid-2 { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1.25rem; }
+
+    .card { background-color: var(--card-bg); border: 1px solid var(--card-border); border-radius: 0.5rem; padding: 1.25rem; }
+    .card-title { font-size: 1.05rem; font-weight: 600; margin-bottom: 0.85rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.4rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem; }
+
+    .btn-group { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.85rem; }
+    button { background-color: var(--accent); color: #000; font-weight: 600; border: none; padding: 0.45rem 0.9rem; border-radius: 0.375rem; cursor: pointer; transition: all 0.2s; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 0.3rem; }
+    button:hover { background-color: var(--accent-hover); color: #fff; }
+    button.btn-secondary { background-color: #475569; color: #fff; }
+    button.btn-secondary:hover { background-color: #334155; }
+    button.btn-purple { background-color: var(--purple); color: #fff; }
+    button.btn-purple:hover { background-color: #9333ea; }
+    button.btn-warning { background-color: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    button.btn-warning:hover { background-color: var(--warning); color: #000; }
+    button.btn-danger { background-color: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    button.btn-danger:hover { background-color: var(--danger); color: #fff; }
+    button.btn-sm { padding: 0.25rem 0.5rem; font-size: 0.78rem; }
+
+    .mode-toggle { display: flex; background: #0f172a; border: 1px solid var(--card-border); border-radius: 0.375rem; padding: 0.2rem; margin-bottom: 1rem; width: fit-content; }
+    .mode-toggle label { padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; border-radius: 0.25rem; color: var(--text-muted); transition: all 0.2s; }
+    .mode-toggle input[type="radio"] { display: none; }
+    .mode-toggle input[type="radio"]:checked + label { background-color: var(--accent); color: #000; }
+
+    .grid-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1rem; }
+    .form-group { display: flex; flex-direction: column; gap: 0.25rem; }
+    label { font-size: 0.8rem; color: var(--text-muted); font-weight: 500; }
+    input, select { background: #0f172a; border: 1px solid var(--card-border); color: var(--text); padding: 0.45rem; border-radius: 0.25rem; font-size: 0.85rem; }
+    input:focus, select:focus { outline: 1px solid var(--accent); }
+
+    .input-with-btn { display: flex; gap: 0.3rem; }
+    .input-with-btn input { flex: 1; }
+
+    /* Tables */
+    .table-container { overflow-x: auto; max-height: 280px; overflow-y: auto; border: 1px solid var(--card-border); border-radius: 0.375rem; }
+    table { width: 100%; border-collapse: collapse; text-align: left; font-size: 0.825rem; }
+    th, td { padding: 0.55rem 0.75rem; border-bottom: 1px solid var(--card-border); }
+    th { background-color: #0f172a; color: var(--accent); font-weight: 600; position: sticky; top: 0; z-index: 10; }
+    tr:hover { background-color: rgba(255,255,255,0.02); }
+    .empty-row { text-align: center; color: var(--text-muted); padding: 1.5rem; }
+
+    /* Badges */
+    .badge { padding: 0.15rem 0.5rem; border-radius: 0.25rem; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+    .badge-success { background: rgba(34, 197, 94, 0.2); color: var(--success); border: 1px solid var(--success); }
+    .badge-danger { background: rgba(239, 68, 68, 0.2); color: var(--danger); border: 1px solid var(--danger); }
+    .badge-warning { background: rgba(245, 158, 11, 0.2); color: var(--warning); border: 1px solid var(--warning); }
+    .badge-purple { background: rgba(168, 85, 247, 0.2); color: var(--purple); border: 1px solid var(--purple); }
+
+    /* Docs & Tab Controls */
+    .doc-tabs { display: flex; gap: 0.5rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem; margin-bottom: 0.85rem; flex-wrap: wrap; }
+    .doc-tab-btn { background: #0f172a; color: var(--text-muted); border: 1px solid var(--card-border); padding: 0.35rem 0.75rem; border-radius: 0.375rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+    .doc-tab-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
+    .doc-content-box { background: #090d16; border: 1px solid var(--card-border); border-radius: 0.375rem; padding: 1rem; max-height: 400px; overflow-y: auto; color: #e2e8f0; font-size: 0.825rem; line-height: 1.5; white-space: pre-wrap; font-family: monospace; }
+
+    pre { background: #090d16; padding: 0.85rem; border-radius: 0.375rem; border: 1px solid var(--card-border); overflow-x: auto; color: #a5f3fc; font-size: 0.8rem; max-height: 200px; transition: border-color 0.2s, color 0.2s; }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>🏦 Trade Store Architect Console</h1>
+      <div class="metrics-bar">
+        <div class="metric-badge"><span class="status-dot" id="health-dot"></span> Status: <span id="health-status" class="metric-value">Connecting...</span></div>
+        <div class="metric-badge">DB Trades: <span id="m-db-count" class="metric-value">0</span></div>
+        <div class="metric-badge">Queue Trades: <span id="m-queue-count" class="metric-value">0</span></div>
+        <div class="metric-badge">Exceptions: <span id="m-exception-count" class="metric-value">0</span></div>
+        <div class="metric-badge">PVC Mounted: <span id="m-pvc-status" class="metric-value badge badge-success">Checking</span></div>
+        <div class="metric-badge">Queue Mode: <span id="m-queue-state" class="metric-value badge badge-success">Running</span></div>
+      </div>
+    </header>
+
+    <!-- Top Grid: Form & Controls -->
+    <div class="grid-2">
+      <!-- Ingest Form Card -->
+      <div class="card">
+        <div class="card-title">
+          <span>📥 Ingest Trade Transaction</span>
+          <label style="font-size:0.75rem; cursor:pointer;"><input type="checkbox" id="auto-refresh-check" checked onchange="toggleAutoRefresh()" /> Auto-Refresh (3s)</label>
+        </div>
+
+        <div style="margin-bottom:0.6rem;">
+          <label>Ingestion Protocol Mode:</label>
+          <div class="mode-toggle">
+            <input type="radio" id="mode-sync" name="mode" value="sync" checked />
+            <label for="mode-sync">⚡ Sync API (POST /api/v1/trades)</label>
+            <input type="radio" id="mode-stream" name="mode" value="stream" />
+            <label for="mode-stream">🌊 Async Stream Queue (/stream)</label>
+          </div>
+        </div>
+
+        <form id="trade-form" onsubmit="handleTradeSubmit(event)">
+          <div class="grid-form">
+            <div class="form-group" style="grid-column: span 2;">
+              <label for="trade_id">
+                Trade ID
+                <span style="font-size:0.72rem; color:var(--accent); font-weight:normal;">
+                  (<input type="checkbox" id="auto-random-id" /> Auto-Randomize on Send)
+                </span>
+              </label>
+              <div class="input-with-btn">
+                <input type="text" id="trade_id" value="T1" required />
+                <button type="button" class="btn-secondary btn-sm" onclick="generateRandomTradeId()" title="Generate new unique Trade ID">🎲 Random</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="version">Version</label>
+              <input type="number" id="version" value="1" min="0" required />
+            </div>
+            <div class="form-group">
+              <label for="counter_party_id">Counter-Party</label>
+              <input type="text" id="counter_party_id" value="CP-1" required />
+            </div>
+            <div class="form-group">
+              <label for="book_id">Book ID</label>
+              <input type="text" id="book_id" value="B1" required />
+            </div>
+            <div class="form-group">
+              <label for="maturity_date">Maturity Date</label>
+              <input type="date" id="maturity_date" required />
+            </div>
+          </div>
+          <div style="display:flex; gap:0.5rem;">
+            <button type="submit" style="flex:1;">Submit Trade</button>
+            <button type="button" class="btn-secondary" onclick="loadSingleTrade()">🔍 Search DB ID</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Presets & Queue Stream Size Controller -->
+      <div class="card">
+        <div class="card-title">🧪 Queue Stream Config & Validation Presets</div>
+        
+        <!-- Stream Size / Batch Config -->
+        <div style="background:#0f172a; border: 1px solid var(--card-border); padding:0.75rem; border-radius:0.375rem; margin-bottom:0.85rem;">
+          <label style="display:block; margin-bottom:0.4rem; font-weight:600; color:var(--accent);">🌊 Configure Stream Batch Size:</label>
+          <div style="display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap;">
+            <div style="display:flex; flex-direction:column; width:110px;">
+              <label for="stream-batch-size">Batch Size (N):</label>
+              <input type="number" id="stream-batch-size" value="10" min="1" max="100" style="padding:0.3rem;" />
+            </div>
+            <div style="display:flex; flex-direction:column; flex:1;">
+              <label style="visibility:hidden;">Action</label>
+              <button onclick="streamBatchScenario()" class="btn-purple" style="white-space:nowrap;">🌊 Stream Batch (Random IDs)</button>
+            </div>
+          </div>
+          <div style="margin-top:0.4rem; font-size:0.75rem; color:var(--text-muted);">
+            Generates unique randomized Trade IDs (`T-XXXXXX`) so streaming batches never clash across runs.
+          </div>
+        </div>
+
+        <!-- Validation Presets -->
+        <div style="margin-bottom:0.85rem;">
+          <label style="display:block; margin-bottom:0.4rem; font-weight:600;">Run Rule Validation Tests:</label>
+          <div class="btn-group">
+            <button onclick="applyPreset('valid')">🟢 Pre-fill Valid Trade</button>
+            <button onclick="applyPreset('lower_version')" class="btn-danger">🔴 Test Lower Version Rule (HTTP 422)</button>
+            <button onclick="applyPreset('past_date')" class="btn-danger">🔴 Test Past Maturity Rule (HTTP 400)</button>
+          </div>
+        </div>
+
+        <!-- System Actions -->
+        <div style="border-top: 1px solid var(--card-border); padding-top:0.75rem;">
+          <label style="display:block; margin-bottom:0.4rem;">System Operations:</label>
+          <div class="btn-group">
+            <button onclick="triggerAutoExpiration()" class="btn-secondary">⚡ Trigger Auto-Expiration Check</button>
+            <button onclick="clearExceptions()" class="btn-danger">🗑️ Clear Exception Log</button>
+            <button onclick="refreshAllData()" class="btn-secondary">🔄 Refresh Panels</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Queue & Consumer Speed Control Panel -->
+    <div class="card">
+      <div class="card-title">
+        <span>⏳ Streaming Event Queue Control (`asyncio.Queue`)</span>
+        <div style="display:flex; gap:0.4rem; align-items:center;">
+          <span style="font-size:0.8rem; color:var(--text-muted);">Consumer Controls:</span>
+          <button onclick="setConsumerConfig(true, null)" class="btn-warning btn-sm">⏸️ Pause Queue</button>
+          <button onclick="setConsumerConfig(false, 0.8)" class="btn-purple btn-sm">🐢 Slow Speed (0.8s)</button>
+          <button onclick="setConsumerConfig(false, 0.0)" class="btn-secondary btn-sm">⚡ Real-time (0.0s)</button>
+          <button onclick="fetchQueueTrades()" class="btn-secondary btn-sm">🔄 Refresh Queue</button>
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Trade ID</th>
+              <th>Version</th>
+              <th>Counter-Party</th>
+              <th>Book ID</th>
+              <th>Maturity Date</th>
+            </tr>
+          </thead>
+          <tbody id="queue-trades-body">
+            <tr><td colspan="5" class="empty-row">Queue is currently empty</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Main Database Trades & Exceptions Grid -->
+    <div class="grid-2">
+      <!-- Database Trades View -->
+      <div class="card">
+        <div class="card-title">
+          <span>🗄️ Database Trades (SQLite Store)</span>
+          <label style="font-size:0.8rem; font-weight:normal; cursor:pointer;">
+            <input type="checkbox" id="include-expired-check" checked onchange="fetchDatabaseTrades()" /> Show Expired Trades
+          </label>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Trade ID</th>
+                <th>Version</th>
+                <th>CP</th>
+                <th>Book</th>
+                <th>Maturity</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="db-trades-body">
+              <tr><td colspan="6" class="empty-row">Loading database records...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Exceptions View -->
+      <div class="card">
+        <div class="card-title">
+          <span>⚠️ Rejections & Exception Audit Log</span>
+          <button onclick="fetchExceptions()" class="btn-secondary btn-sm">Refresh Log</button>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>Trade ID</th>
+                <th>Error Type</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="exceptions-body">
+              <tr><td colspan="4" class="empty-row">No trade rejections recorded</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Documentation & PlantUML Architecture Viewer -->
+    <div class="card">
+      <div class="card-title">
+        <span>📖 System Documentation, PlantUML Architecture & Application Logs</span>
+        <button onclick="loadDocTab(activeDocTab)" class="btn-secondary btn-sm">🔄 Refresh View</button>
+      </div>
+      <div class="doc-tabs">
+        <button class="doc-tab-btn active" id="tab-readme" onclick="switchDocTab('readme')">📘 README.md</button>
+        <button class="doc-tab-btn" id="tab-ai-prompts" onclick="switchDocTab('ai-prompts')">🤖 AI_PROMPTS.md</button>
+        <button class="doc-tab-btn" id="tab-diagrams" onclick="switchDocTab('diagrams')">📐 PlantUML Diagrams</button>
+        <button class="doc-tab-btn" id="tab-app-log" onclick="switchDocTab('app-log')">📜 Application Log (/data/app.log)</button>
+      </div>
+      <div id="diagram-selector-container" style="display:none; margin-bottom:0.75rem;">
+        <label style="font-weight:600; margin-right:0.5rem;">Select Diagram:</label>
+        <select id="puml-select" onchange="renderSelectedDiagram()" style="padding:0.3rem; font-size:0.85rem;">
+          <option value="architecture">High Level Architecture (architecture.puml)</option>
+          <option value="domain_class">Domain Class Diagram (domain_class.puml)</option>
+          <option value="trade_flow">Trade Ingestion Sequence (trade_flow.puml)</option>
+        </select>
+      </div>
+      <div id="doc-content" class="doc-content-box">Select a documentation tab above...</div>
+    </div>
+
+    <!-- Live Console Terminal -->
+    <div class="card">
+      <div class="card-title">💻 API Response Output Console</div>
+      <pre id="terminal-output">// API response output will appear here after actions...</pre>
+    </div>
+
+  </div>
+
+  <script>
+    const API_BASE = window.location.origin;
+    let autoRefreshTimer = null;
+    let activeDocTab = 'readme';
+    let loadedDiagrams = [];
+
+    // Set initial random trade ID and future maturity date
+    generateRandomTradeId();
+    const futureDate = new Date();
+    futureDate.setDate(futureDate.getDate() + 30);
+    document.getElementById('maturity_date').value = formatLocalDate(futureDate);
+
+    function formatLocalDate(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function generateRandomTradeId() {
+      const randomNum = Math.floor(100000 + Math.random() * 900000);
+      document.getElementById('trade_id').value = `T-${randomNum}`;
+    }
+
+    async function checkHealth() {
+      try {
+        const res = await fetch(`${API_BASE}/health`);
+        if (res.ok) {
+          const data = await res.json();
+          document.getElementById('health-dot').style.background = '#22c55e';
+          document.getElementById('health-status').textContent = 'ONLINE (SQLite)';
+          document.getElementById('m-db-count').textContent = data.database_trades_count ?? 0;
+          document.getElementById('m-queue-count').textContent = data.queue_size ?? 0;
+          document.getElementById('m-exception-count').textContent = data.exception_count ?? 0;
+
+          const pvcBadge = document.getElementById('m-pvc-status');
+          if (data.pvc_mounted) {
+            pvcBadge.textContent = 'Yes (/data)';
+            pvcBadge.className = 'metric-value badge badge-success';
+          } else {
+            pvcBadge.textContent = 'Fallback Mode';
+            pvcBadge.className = 'metric-value badge badge-warning';
+          }
+
+          const queueBadge = document.getElementById('m-queue-state');
+          if (data.consumer_paused) {
+            queueBadge.textContent = '⏸️ Paused';
+            queueBadge.className = 'metric-value badge badge-warning';
+          } else if (data.consumer_delay_seconds > 0) {
+            queueBadge.textContent = `🐢 Throttle (${data.consumer_delay_seconds}s)`;
+            queueBadge.className = 'metric-value badge badge-purple';
+          } else {
+            queueBadge.textContent = '⚡ Real-time';
+            queueBadge.className = 'metric-value badge badge-success';
+          }
+        } else {
+          throw new Error();
+        }
+      } catch (e) {
+        document.getElementById('health-dot').style.background = '#ef4444';
+        document.getElementById('health-status').textContent = 'OFFLINE';
+      }
+    }
+
+    async function setConsumerConfig(isPaused, delaySeconds) {
+      const payload = {};
+      if (isPaused !== null) payload.is_paused = isPaused;
+      if (delaySeconds !== null) payload.delay_seconds = delaySeconds;
+
+      writeTerminal(`Updating Queue Consumer Config...`, payload);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades/queue/config`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        writeTerminal(`Queue Consumer Config Updated:`, data);
+        refreshAllData();
+      } catch (err) {
+        writeTerminal("Failed to update queue consumer config", { error: err.message }, true);
+      }
+    }
+
+    async function fetchDatabaseTrades() {
+      const includeExpired = document.getElementById('include-expired-check').checked;
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades?include_expired=${includeExpired}`);
+        if (res.ok) {
+          const trades = await res.json();
+          const tbody = document.getElementById('db-trades-body');
+          if (trades.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="6" class="empty-row">No trades found in SQLite database.</td></tr>';
+            return;
+          }
+          tbody.innerHTML = trades.map(t => `
+            <tr>
+              <td><strong>${t.trade_id}</strong></td>
+              <td><span class="badge badge-purple">v${t.version}</span></td>
+              <td>${t.counter_party_id}</td>
+              <td>${t.book_id}</td>
+              <td>${t.maturity_date}</td>
+              <td>${t.expired === 'Y' ? '<span class="badge badge-danger">Expired</span>' : '<span class="badge badge-success">Active</span>'}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        console.error("Failed to fetch database trades", err);
+      }
+    }
+
+    async function fetchQueueTrades() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades/queue`);
+        if (res.ok) {
+          const queue = await res.json();
+          const tbody = document.getElementById('queue-trades-body');
+          if (queue.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="5" class="empty-row">Queue is currently empty</td></tr>';
+            return;
+          }
+          tbody.innerHTML = queue.map(t => `
+            <tr>
+              <td><strong>${t.trade_id}</strong></td>
+              <td>v${t.version}</td>
+              <td>${t.counter_party_id}</td>
+              <td>${t.book_id}</td>
+              <td>${t.maturity_date}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        console.error("Failed to fetch queue", err);
+      }
+    }
+
+    async function fetchExceptions() {
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades/exceptions`);
+        if (res.ok) {
+          const exceptions = await res.json();
+          const tbody = document.getElementById('exceptions-body');
+          if (exceptions.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4" class="empty-row">No trade rejections recorded</td></tr>';
+            return;
+          }
+          tbody.innerHTML = exceptions.map(e => `
+            <tr>
+              <td style="font-size:0.75rem; color:var(--text-muted);">${e.timestamp.split(' ')[1]}</td>
+              <td><strong>${e.trade_id}</strong></td>
+              <td><span class="badge badge-danger">${e.error_type}</span></td>
+              <td style="color: #fca5a5; font-size:0.78rem;">${e.message}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        console.error("Failed to fetch exceptions", err);
+      }
+    }
+
+    // Documentation & Diagram Tab Handlers
+    function switchDocTab(tab) {
+      activeDocTab = tab;
+      document.querySelectorAll('.doc-tab-btn').forEach(b => b.classList.remove('active'));
+      document.getElementById(`tab-${tab}`).classList.add('active');
+      
+      const selectBox = document.getElementById('diagram-selector-container');
+      selectBox.style.display = (tab === 'diagrams') ? 'block' : 'none';
+
+      loadDocTab(tab);
+    }
+
+    async function loadDocTab(tab) {
+      const box = document.getElementById('doc-content');
+      box.textContent = "Loading content...";
+
+      try {
+        if (tab === 'readme') {
+          const res = await fetch(`${API_BASE}/api/v1/trades/docs/readme`);
+          const data = await res.json();
+          box.textContent = data.content || "README content unavailable.";
+        } else if (tab === 'ai-prompts') {
+          const res = await fetch(`${API_BASE}/api/v1/trades/docs/ai-prompts`);
+          const data = await res.json();
+          box.textContent = data.content || "AI Prompts content unavailable.";
+        } else if (tab === 'diagrams') {
+          const res = await fetch(`${API_BASE}/api/v1/trades/docs/diagrams`);
+          loadedDiagrams = await res.json();
+          renderSelectedDiagram();
+        } else if (tab === 'app-log') {
+          const res = await fetch(`${API_BASE}/api/v1/trades/docs/app-log?lines=150`);
+          const data = await res.json();
+          box.textContent = data.content || "No log content available.";
+        }
+      } catch (err) {
+        box.textContent = `Failed to load documentation tab '${tab}': ${err.message}`;
+      }
+    }
+
+    function renderSelectedDiagram() {
+      const selected = document.getElementById('puml-select').value;
+      const box = document.getElementById('doc-content');
+      const diag = loadedDiagrams.find(d => d.name === selected || d.filename.includes(selected));
+      if (diag) {
+        box.textContent = `PlantUML Source (${diag.filename}):\n\n${diag.content}`;
+      } else {
+        box.textContent = `Diagram '${selected}' not loaded yet.`;
+      }
+    }
+
+    async function handleTradeSubmit(e, bypassRandom = false) {
+      if (e && e.preventDefault) e.preventDefault();
+
+      const isStream = document.getElementById('mode-stream').checked;
+      const autoRandom = document.getElementById('auto-random-id').checked;
+
+      if (autoRandom && !bypassRandom) {
+        generateRandomTradeId();
+      }
+
+      const endpoint = isStream ? `${API_BASE}/api/v1/trades/stream` : `${API_BASE}/api/v1/trades`;
+
+      const payload = {
+        trade_id: document.getElementById('trade_id').value,
+        version: parseInt(document.getElementById('version').value, 10),
+        counter_party_id: document.getElementById('counter_party_id').value,
+        book_id: document.getElementById('book_id').value,
+        maturity_date: document.getElementById('maturity_date').value
+      };
+
+      writeTerminal(`Sending POST to ${endpoint}...`, payload);
+
+      try {
+        const res = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await res.json();
+        const isError = res.status >= 400;
+
+        writeTerminal(
+          `HTTP ${res.status} ${res.statusText} ${isError ? '⚠️ REJECTED (Rule Enforced!)' : '✅ CREATED'}`,
+          data,
+          isError
+        );
+
+        setTimeout(refreshAllData, 300);
+      } catch (err) {
+        writeTerminal('Network/Server Error', { error: err.message }, true);
+      }
+    }
+
+    async function applyPreset(type) {
+      const today = new Date();
+      document.getElementById('auto-random-id').checked = false;
+      document.getElementById('mode-sync').checked = true;
+
+      if (type === 'valid') {
+        generateRandomTradeId();
+        const future = new Date(today);
+        future.setDate(today.getDate() + 60);
+        document.getElementById('version').value = '1';
+        document.getElementById('counter_party_id').value = 'CP-1';
+        document.getElementById('book_id').value = 'B1';
+        document.getElementById('maturity_date').value = formatLocalDate(future);
+        writeTerminal("Form pre-filled with valid trade. Click 'Submit Trade' to send.");
+      } 
+      else if (type === 'lower_version') {
+        const testTradeId = 'T_LOWER_TEST';
+        const future = new Date(today);
+        future.setDate(today.getDate() + 60);
+
+        writeTerminal(`Preparing Lower Version Test...\nStep 1: Inserting base trade '${testTradeId} v1' into database.`);
+
+        try {
+          const setupPayload = {
+            trade_id: testTradeId,
+            version: 1,
+            counter_party_id: 'CP-1',
+            book_id: 'B1',
+            maturity_date: formatLocalDate(future)
+          };
+          await fetch(`${API_BASE}/api/v1/trades`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(setupPayload)
+          });
+          refreshAllData();
+        } catch (err) {}
+
+        document.getElementById('trade_id').value = testTradeId;
+        document.getElementById('version').value = '0';
+        document.getElementById('counter_party_id').value = 'CP-1';
+        document.getElementById('book_id').value = 'B1';
+        document.getElementById('maturity_date').value = formatLocalDate(future);
+
+        writeTerminal(`Step 2: Submitting '${testTradeId} v0' (lower version than stored v1) to trigger HTTP 422 rejection...`);
+
+        setTimeout(() => executePresetSubmit(), 300);
+      } 
+      else if (type === 'past_date') {
+        const testTradeId = 'T_PAST_TEST';
+        const past = new Date(today);
+        past.setDate(today.getDate() - 10);
+
+        document.getElementById('trade_id').value = testTradeId;
+        document.getElementById('version').value = '1';
+        document.getElementById('counter_party_id').value = 'CP-1';
+        document.getElementById('book_id').value = 'B1';
+        document.getElementById('maturity_date').value = formatLocalDate(past);
+
+        writeTerminal(`Submitting '${testTradeId}' with PAST maturity date (${formatLocalDate(past)}) to trigger HTTP 400 rejection...`);
+
+        setTimeout(() => executePresetSubmit(), 300);
+      }
+    }
+
+    async function executePresetSubmit() {
+      await handleTradeSubmit(null, true);
+    }
+
+    async function loadSingleTrade() {
+      const id = document.getElementById('trade_id').value;
+      writeTerminal(`Fetching GET /api/v1/trades/${id}...`);
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades/${id}`);
+        const data = await res.json();
+        const isError = res.status >= 400;
+        writeTerminal(`HTTP ${res.status} ${res.statusText}`, data, isError);
+      } catch (err) {
+        writeTerminal('Error searching trade', { error: err.message }, true);
+      }
+    }
+
+    async function triggerAutoExpiration() {
+      writeTerminal("Triggering POST /api/v1/trades/trigger-expiration...");
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades/trigger-expiration`, { method: 'POST' });
+        const data = await res.json();
+        writeTerminal(`Auto-Expiration Result (HTTP ${res.status}):`, data);
+        refreshAllData();
+      } catch (err) {
+        writeTerminal('Expiration Check Failed', { error: err.message }, true);
+      }
+    }
+
+    async function clearExceptions() {
+      writeTerminal("Clearing Exception Log...");
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades/exceptions`, { method: 'DELETE' });
+        const data = await res.json();
+        writeTerminal("Cleared Exception Log", data);
+        refreshAllData();
+      } catch (err) {
+        writeTerminal("Error clearing exceptions", { error: err.message }, true);
+      }
+    }
+
+    async function streamBatchScenario() {
+      const batchSizeInput = document.getElementById('stream-batch-size');
+      const count = parseInt(batchSizeInput.value, 10) || 10;
+
+      const today = new Date();
+      const future = new Date(today);
+      future.setDate(today.getDate() + 45);
+
+      const batch = [];
+      for (let i = 1; i <= count; i++) {
+        const randomNum = Math.floor(100000 + Math.random() * 900000);
+        batch.push({
+          trade_id: `T-${randomNum}`,
+          version: 1,
+          counter_party_id: `CP-${(i % 5) + 1}`,
+          book_id: `B${(i % 3) + 1}`,
+          maturity_date: formatLocalDate(future)
+        });
+      }
+
+      writeTerminal(`Publishing batch of ${count} trades with random IDs to Streaming Queue...`);
+
+      try {
+        const res = await fetch(`${API_BASE}/api/v1/trades/stream/batch`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(batch)
+        });
+
+        const data = await res.json();
+        writeTerminal(`Batch Stream Published (HTTP ${res.status}):`, data);
+
+        setTimeout(refreshAllData, 200);
+      } catch (err) {
+        writeTerminal(`Failed to stream batch`, { error: err.message }, true);
+      }
+    }
+
+    function writeTerminal(header, jsonPayload = null, isError = false) {
+      const output = document.getElementById('terminal-output');
+      let text = `[${new Date().toLocaleTimeString()}] ${header}\n`;
+      if (jsonPayload) {
+        text += JSON.stringify(jsonPayload, null, 2);
+      }
+      output.textContent = text;
+      output.style.color = isError ? '#f87171' : '#a5f3fc';
+      output.style.borderColor = isError ? '#ef4444' : 'var(--card-border)';
+    }
+
+    function refreshAllData() {
+      checkHealth();
+      fetchDatabaseTrades();
+      fetchQueueTrades();
+      fetchExceptions();
+      loadDocTab(activeDocTab);
+    }
+
+    function toggleAutoRefresh() {
+      const isChecked = document.getElementById('auto-refresh-check').checked;
+      if (isChecked && !autoRefreshTimer) {
+        autoRefreshTimer = setInterval(refreshAllData, 3000);
+      } else if (!isChecked && autoRefreshTimer) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+      }
+    }
+
+    // Initial Load & Start Auto-Refresh
+    refreshAllData();
+    autoRefreshTimer = setInterval(refreshAllData, 3000);
+  </script>
+</body>
+</html>

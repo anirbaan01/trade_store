@@ -1,0 +1,43 @@
+@startuml Trade_Ingestion_Sequence_Diagram
+
+autonumber
+actor Client
+participant "FastAPI Routes" as API
+participant "Trade Service" as Service
+participant "NoSQL State Cache" as Cache
+participant "SQLite Repo" as DB
+
+Client -> API: POST /api/v1/trades (Trade Payload)
+activate API
+
+API -> Service: process_trade(trade)
+activate Service
+
+Service -> Service: Validate Maturity Date\n(maturity_date < today?)
+alt Maturity Date < Today
+    Service --> API: Throw InvalidMaturityDateException
+    API --> Client: HTTP 400 Bad Request
+else Maturity Date Valid
+    Service -> Cache: get_latest_version(trade_id)
+    activate Cache
+    Cache --> Service: cached_version (e.g. 2)
+    deactivate Cache
+
+    alt incoming.version < cached_version
+        Service --> API: Throw LowerVersionTradeException
+        API --> Client: HTTP 422 Unprocessable Entity
+    else incoming.version >= cached_version
+        Service -> DB: save_or_update(trade)
+        activate DB
+        DB --> Service: Success
+        deactivate DB
+
+        Service -> Cache: set_latest_version(trade_id, version)
+        Service --> API: Trade Processed
+        API --> Client: HTTP 201 Created (Trade Object)
+    end
+end
+deactivate Service
+deactivate API
+
+@enduml
