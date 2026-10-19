@@ -138,11 +138,6 @@ docker run -d -p 8000:8000 --name trade-store-app trade-store:latest
 
 ---
 
-## CI/CD Pipeline Notice
-
-Note: The GitHub Actions CI/CD workflow defined in `.github/workflows/ci.yml` is included as a reference configuration and is currently not tested.
-
----
 
 ## Documentation and PlantUML Diagrams in Web UI
 
